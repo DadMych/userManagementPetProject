@@ -1,0 +1,326 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="{% static 'style.css' %}">
+    <title>Main Page</title>
+</head>
+<body>
+<div id="messages-container">
+    {% if messages %}
+        {% for message in messages %}
+            {% if message.tags == 'success' %}
+                <div id="success-message">{{ message }}</div>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+    {% if messages %}
+        {% for message in messages %}
+            {% if message.tags == 'error' %}
+                <div id="error-message">{{ message }}</div>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+</div>
+<div id="users">
+    <div id="users__table-container">
+        <button id="users__button" onclick="openCreationForm()">
+            Create User
+        </button>
+        <table id="users__table">
+            <tr>
+                <th>Username</th>
+                <th>First name</th>
+                <th>Last name</th>
+                <th>Email</th>
+                <th>Type</th>
+            </tr>
+            {% if users.count > 0 %}
+                {% for user in users %}
+                    {% if user == current_user %}
+                        <tr class="users__table-info-row" style="background: #EFF0F4 0% 0% no-repeat padding-box" onclick="openUserForm(this, {{ user.id }})">
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.first_name }}</td>
+                            <td>{{ user.last_name }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.user_type }}</td>
+                        </tr>
+                    {% else %}
+                        <tr class="users__table-info-row" onclick="openUserForm(this, {{ user.id }})">
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.first_name }}</td>
+                            <td>{{ user.last_name }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.user_type }}</td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        </table>
+    </div>
+
+    <form class="users__form" id="users__form-create" method="post" action="create/">
+        {% csrf_token %}
+        <img alt="exit from form" id="users__form-exit" src="{% static "close-24px.svg" %}" onclick="hideUsersForm()">
+        <h3 id="users__form-title">Create new user</h3>
+        <label for="username-input">Username*</label><br>
+        <input required type="text" id="username-input" name="username" onfocusout="validField(this)">
+        <div class="users__form__error-message">This field is required</div>
+
+        <label for="firstname-input">First name*</label><br>
+        <input required type="text" id="firstname-input" name="first_name" onfocusout="validField(this)">
+        <div class="users__form__error-message">This field is required</div>
+
+        <label for="lastname-input">Last name*</label><br>
+        <input required type="text" id="lastname-input" name="last_name" onfocusout="validField(this)">
+        <div class="users__form__error-message">This field is required</div>
+
+        <label for="email-input">Email*</label><br>
+        <input required type="email" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$" id="email-input" name="email"
+               onkeyup='checkEmail()' placeholder=" ">
+        <div class="users__form__error-message" id="users__form__error-message-email-correct">Input correct email</div>
+
+        <label for="type-input">Type*</label><br>
+        <select required name="user_type" id="type-input" onfocusout="checkSelection()">
+            <option value=""></option>
+            <option value="Administrator">Admin</option>
+            <option value="Driver">Driver</option>
+        </select>
+        <div class="users__form__error-message" id="users__form__error-message-selection-correct"
+             onfocusout="checkSelection()">Choose the correct selection
+        </div>
+
+        <label for="password-input">Password*</label><br>
+        <input pattern="^(?=.*[A-Za-z])(?=.*?[0-9]).{8,}$" required type="password" id="password-input" name="password"
+               onfocusout='checkPassword()' onkeyup='checkPasswordsMatching()'>
+        <div class="users__form__error-message" id="users__form__error-message-password-correct">Input correct
+            password
+        </div>
+
+        <label for="password-repeat-input">*Repeat password</label><br>
+        <input pattern="^(?=.*[A-Za-z])(?=.*?[0-9]).{8,}$" required type="password" id="password-repeat-input"
+               name="password_repeat" onkeyup='checkPasswordsMatching()'>
+        <div class="users__form__error-message" id="users__form__error-message-passwords-matching">Passwords didn't
+            match
+        </div>
+
+        <input id="form-submit" type="submit" value="Create" onclick="createUser()">
+    </form>
+    {% if current_user %}
+        <form class="users__form" id="users__form--manage" method="post" action="delete/{{ current_user.id }}">
+            {% csrf_token %}
+            <img alt="exit from form" id="users__form-exit" src="{% static "close-24px.svg" %}"
+                 onclick="hideManageForm()">
+            <h3 id="users__form-title">{{ current_user.first_name }} {{ current_user.last_name }}</h3>
+            <label for="username-edit">Username*</label><br>
+            <input required type="text" id="username-edit" name="username" value="{{ current_user.username }}"
+                   onfocusout="validField(this)">
+            <div class="users__form__error-message">This field is required</div>
+
+            <label for="firstname-edit">First name*</label><br>
+            <input required type="text" id="firstname-edit" name="first_name" value="{{ current_user.first_name }}"
+                   onfocusout="validField(this)">
+            <div class="users__form__error-message">This field is required</div>
+
+            <label for="lastname-edit">Last name*</label><br>
+            <input required type="text" id="lastname-edit" name="last_name" value="{{ current_user.last_name }}"
+                   onfocusout="validField(this)">
+            <div class="users__form__error-message">This field is required</div>
+
+            <label for="email-edit">Email*</label><br>
+            <input required type="email" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$"
+                   value="{{ current_user.email }}" id="email-edit" name="email" onkeyup='checkEditEmail()'
+                   placeholder=" ">
+            <div class="users__form__error-message" id="users__form__error-message-email-correct-edit">Input correct
+                email
+            </div>
+
+            <label for="type-edit">Type*</label><br>
+            <select required name="user_type" id="type-edit" onfocusout="checkEditSelection()">
+                <option value=""></option>
+                {% if current_user.user_type == 'Administrator' %}
+                    <option value="Administrator" selected>Admin</option>
+                    <option value="Driver">Driver</option>
+                {% else %}
+                    <option value="Administrator">Admin</option>
+                    <option value="Driver" selected>Driver</option>
+                {% endif %}
+            </select>
+            <div class="users__form__error-message" id="users__form__error-message-selection-correct-edit">Choose the
+                correct selection
+            </div>
+
+            <label for="password-edit">Password*</label><br>
+            <input pattern="^(?=.*[A-Za-z])(?=.*?[0-9]).{8,}$" required type="password"
+                   value="{{ current_user.password }}" id="password-edit" name="password"
+                   onfocusout='checkEditPassword()' onkeyup='checkEditPasswordsMatching()'>
+            <div class="users__form__error-message" id="users__form__error-message-password-correct=edit">Input correct
+                password
+            </div>
+
+            <label for="password-repeat-edit">*Repeat password</label><br>
+            <input pattern="^(?=.*[A-Za-z])(?=.*?[0-9]).{8,}$" required type="password" id="password-repeat-edit"
+                   value="{{ current_user.password }}" name="password_repeat" onkeyup='checkEditPasswordsMatching()'>
+            <div class="users__form__error-message" id="users__form__error-message-passwords-matching-edit">Passwords
+                didn't match
+            </div>
+
+            <input id="form-submit-delete" type="submit" value="Delete" onclick="deleteUser({{ current_user.id }})">
+            <input id="form-submit-save" type="submit" value="Save" onclick="saveUser({{ current_user.id }})">
+        </form>
+    {% endif %}
+</div>
+<script>
+    let creationForm = document.getElementById('users__form-create')
+    let manageForm = document.getElementById('users__form--manage')
+    let createButton = document.getElementById("form-submit")
+    let deleteButton = document.getElementById("form-submit-delete")
+    let saveButton = document.getElementById("form-submit-save")
+
+    openUserForm = function (element, id) {
+        window.location = '/retrieve/' + id
+        creationForm.style.display = 'none'
+        let allRows = document.getElementsByClassName("users__table-info-row")
+        for (let i = 0; i < allRows.length; i++) {
+            allRows[i].style.background = '#F4F5F8 0 0 no-repeat padding-box'
+        }
+        element.style.background = "#EFF0F4 0% 0% no-repeat padding-box"
+        deleteButton.style.display = 'inline-block'
+        deleteButton.value = 'Delete'
+        saveButton.style.display = 'inline-block'
+        saveButton.value = 'Save'
+        manageForm.style.display = 'inherit'
+
+    }
+    createUser = function () {
+        creationForm.action = "/create/"
+    }
+    deleteUser = function (id) {
+        manageForm.action = "/delete/" + id;
+    }
+    saveUser = function (id) {
+        manageForm.action = "/save/" + id;
+    }
+    openCreationForm = function () {
+        let allRows = document.getElementsByClassName("users__table-info-row")
+        for (let i = 0; i < allRows.length; i++) {
+            allRows[i].style.background = '#F4F5F8 0 0 no-repeat padding-box'
+        }
+        creationForm.style.display = 'inherit'
+        manageForm.style.display = 'none'
+        createButton.style.display = 'inline-block'
+        createButton.value = 'Create'
+    }
+    hideUsersForm = function () {
+        creationForm.style.display = 'none'
+        let header = document.getElementById('users__form-title')
+        let inputs = document.getElementsByTagName('input')
+        for (let i = 0; i < inputs.length; i++) {
+            if (inputs[i].parentElement === creationForm) {
+                console.log('1s')
+                inputs[i].value = '';
+            }
+        }
+        header.innerHTML = 'Create new users'
+        let selectionInput = document.getElementById('type-input')
+        selectionInput.value = ''
+    }
+    hideManageForm = function () {
+        manageForm.style.display = 'none'
+    }
+    /* Validation */
+    checkPasswordsMatching = function () {
+        const passInput = document.getElementById('password-input')
+        let error = document.getElementById('users__form__error-message-passwords-matching')
+        let passwordError = document.getElementById('users__form__error-message-password-correct');
+        let repeatPassInput = document.getElementById('password-repeat-input');
+        if (passInput.value === repeatPassInput.value || passwordError.style.display !== 'none') {
+            error.style.display = 'none';
+            repeatPassInput.style.border = "0";
+            repeatPassInput.style.marginBottom = "16px";
+            createButton.disabled = false
+            createButton.style.cursor = "pointer";
+        } else {
+            error.style.display = 'block';
+            repeatPassInput.style.border = "1px solid #EF7DA0";
+            repeatPassInput.style.marginBottom = "0";
+            createButton.disabled = true
+            createButton.style.cursor = "default";
+        }
+    }
+    checkPassword = function () {
+        let passInput = document.getElementById('password-input')
+        let error = document.getElementById('users__form__error-message-password-correct');
+        let regex;
+        regex = new RegExp("^(?=.*[A-Za-z])(?=.*?[0-9]).{8,}$");
+        if (regex.test(passInput.value)) {
+            error.style.display = 'none';
+            passInput.style.border = "0";
+            passInput.style.marginBottom = "16px";
+        } else {
+            error.style.display = 'block';
+            passInput.style.border = "1px solid #EF7DA0";
+            passInput.style.marginBottom = "0";
+        }
+    }
+    checkSelection = function () {
+        let typeSelection = document.getElementById('type-input')
+        let error = document.getElementById('users__form__error-message-selection-correct');
+        if (typeSelection.value !== "") {
+            error.style.display = 'none';
+            typeSelection.style.border = "0";
+            typeSelection.style.marginBottom = "16px";
+        } else {
+            error.style.display = 'block';
+            typeSelection.style.border = "1px solid #EF7DA0";
+            typeSelection.style.marginBottom = "0";
+        }
+    }
+    checkEditSelection = function () {
+        let typeSelection = document.getElementById('type-edit')
+        let error = document.getElementById('users__form__error-message-selection-correct-edit');
+        if (typeSelection.value !== "") {
+            error.style.display = 'none';
+            typeSelection.style.border = "0";
+            typeSelection.style.marginBottom = "16px";
+        } else {
+            error.style.display = 'block';
+            typeSelection.style.border = "1px solid #EF7DA0";
+            typeSelection.style.marginBottom = "0";
+        }
+    }
+    checkEmail = function () {
+        let emailInput = document.getElementById('email-input')
+        let error = document.getElementById('users__form__error-message-email-correct');
+        let regex;
+        regex = "[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$";
+        console.log(regex.test(emailInput.value))
+        console.log(emailInput.value)
+        if (regex.test(emailInput.value)) {
+            error.style.display = 'none';
+            emailInput.style.border = "0";
+            emailInput.style.marginBottom = "16px";
+        } else {
+            error.style.display = 'block';
+            emailInput.style.border = "1px solid #EF7DA0";
+            emailInput.style.marginBottom = "0";
+        }
+    }
+    validField = function (element) {
+        let error = element.nextElementSibling
+        if (element.value !== "") {
+            error.style.display = 'none';
+            element.style.border = "0";
+            element.style.marginBottom = "16px";
+        } else {
+            error.style.display = 'block';
+            element.style.border = "1px solid #EF7DA0";
+            element.style.marginBottom = "0";
+        }
+    }
+
+</script>
+</body>
+</html>
